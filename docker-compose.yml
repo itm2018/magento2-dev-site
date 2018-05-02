@@ -1,0 +1,84 @@
+version: "2"
+services:
+  web:
+    container_name: "magento2-nginx-phpfpm-ssh-modman-xdebug"
+    image:  imikehuynh/magento2-nginx-phpfpm-ssh-modman-xdebug:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "1022:22"
+      - "443:443"
+      - "9005:9005"
+      - "9011:9011"
+    links:
+      - db
+    volumes:
+      - ./vhosts:/etc/nginx/sites-enabled
+      - ./src:/home/magento/files
+      - sockdata:/sock
+    env_file:
+      - ./global.env
+  db:
+    container_name: db
+    image:  mariadb
+    restart: always
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD="root@root"
+      - MYSQL_DATABASE="magento223ee"
+      - MYSQL_USER="magento2"
+      - MYSQL_PASSWORD="magento2"
+      - TERM="meh"
+    ports:
+      - "3306:3306"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8585:80"
+    links:
+      - db
+  mailhog:
+    container_name: mailhog
+    image: mailhog/mailhog
+    restart: always
+    ports:
+        - "1025:1025"
+        - "8025:8025"
+  redis:
+    container_name: "redis"
+    image: "redis"
+    restart: always
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+  rabbitmq-cluster:
+    hostname: "rabbit1"
+    image: "rabbitmq:3-management"
+    restart: always
+    environment:
+      - RABBITMQ_ERLANG_COOKIE="SWQOKODSQALRPCLNMEQG"
+      - RABBITMQ_DEFAULT_USER="rabbitmq"
+      - RABBITMQ_DEFAULT_PASS="rabbitmq"
+      - RABBITMQ_DEFAULT_VHOST="/"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    labels:
+      NAME: "rabbitmq1"
+    volumes:
+      - ./rabbitmq-conf/enabled_plugins:/etc/rabbitmq/enabled_plugins
+volumes:
+  dbdata:
+  sockdata:
